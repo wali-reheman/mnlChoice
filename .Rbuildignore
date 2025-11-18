@@ -31,3 +31,4 @@
 ^CRAN_CHECK_ISSUES\.md$
 ^mnlChoice\.Rcheck$
 ^mnlChoice.*\.tar\.gz$
+^test_improvements\.R$
