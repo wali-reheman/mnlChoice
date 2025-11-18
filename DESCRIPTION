@@ -24,6 +24,8 @@ Imports:
 Suggests:
     MNP,
     nnet,
+    mvtnorm,
+    ggplot2,
     parallel,
     testthat (>= 3.0.0),
     knitr,
