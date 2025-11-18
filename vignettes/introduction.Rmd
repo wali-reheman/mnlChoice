@@ -1,0 +1,294 @@
+---
+title: "Introduction to mnlChoice"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to mnlChoice}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Overview
+
+The `mnlChoice` package provides tools for comparing Multinomial Logit (MNL) and Multinomial Probit (MNP) models for discrete choice analysis. It helps researchers make evidence-based decisions about which model to use based on their data characteristics and research goals.
+
+### Key Features
+
+- **Model Comparison**: Head-to-head comparison of MNL vs MNP performance
+- **Decision Support**: Evidence-based recommendations for model selection
+- **Dropout Scenario Analysis**: Novel method for testing substitution effects
+- **Flexible Specifications**: Automatic testing of multiple functional forms
+- **Diagnostic Tools**: Comprehensive convergence checking for MNP models
+
+## Installation
+
+```{r, eval=FALSE}
+# Install from GitHub (not yet on CRAN)
+# install.packages("devtools")
+devtools::install_github("username/mnlChoice")
+```
+
+## Basic Usage
+
+### 1. Quick Model Recommendation
+
+The fastest way to get guidance is using `quick_decision()`:
+
+```{r, eval=FALSE}
+library(mnlChoice)
+
+# Get instant recommendation based on your sample size
+result <- quick_decision(
+  n = 300,                    # Your sample size
+  n_predictors = 4,           # Number of predictor variables
+  has_correlation = "unknown" # Expected error correlation
+)
+
+print(result$recommendation)
+print(result$reason)
+```
+
+### 2. Compare MNL and MNP on Your Data
+
+```{r, eval=FALSE}
+# Load example data
+data(commuter_choice)
+
+# Compare models
+comparison <- compare_mnl_mnp(
+  mode ~ income + age + distance + owns_car,
+  data = commuter_choice,
+  metrics = c("RMSE", "Brier", "AIC")
+)
+
+# View results
+print(comparison$results)
+print(comparison$recommendation)
+```
+
+### 3. Test Multiple Functional Forms
+
+One of the package's key findings is that functional form matters more than choosing between MNL and MNP:
+
+```{r, eval=FALSE}
+# Automatically test multiple specifications
+result <- flexible_mnl(
+  mode ~ income + age + distance,
+  data = commuter_choice,
+  forms = c("linear", "quadratic", "log"),
+  selection_criterion = "RMSE"
+)
+
+# View comparison
+print(result$comparison_table)
+
+# Use best model
+best_model <- result$best_model
+summary(best_model)
+```
+
+### 4. Test Substitution Effects (Novel Method)
+
+The package implements a novel method for testing what happens when alternatives are removed from the choice set:
+
+```{r, eval=FALSE}
+# Test what happens if "Active" transportation is removed
+dropout_result <- simulate_dropout_scenario(
+  mode ~ income + age + distance,
+  data = commuter_choice,
+  drop_alternative = "Active",
+  n_sims = 5000
+)
+
+# View substitution patterns
+print(dropout_result$summary_table)
+print(dropout_result$winner)
+```
+
+## Example Workflow
+
+Here's a complete analysis workflow:
+
+```{r, eval=FALSE}
+library(mnlChoice)
+
+# Step 1: Get initial recommendation
+decision <- quick_decision(n = 500, n_predictors = 4)
+
+# Step 2: Test functional forms
+forms_result <- flexible_mnl(
+  mode ~ income + age + distance + owns_car,
+  data = commuter_choice,
+  forms = c("linear", "quadratic")
+)
+
+# Step 3: Compare MNL and MNP if sample size allows
+if (nrow(commuter_choice) >= 250) {
+  comparison <- compare_mnl_mnp(
+    mode ~ income + age + distance + owns_car,
+    data = commuter_choice
+  )
+  print(comparison$recommendation)
+}
+
+# Step 4: Test substitution effects
+dropout <- simulate_dropout_scenario(
+  mode ~ income + age + distance,
+  data = commuter_choice,
+  drop_alternative = "Active"
+)
+
+# Step 5: Create publication-ready table
+pub_table <- publication_table(
+  forms_result$best_model,
+  format = "latex",
+  title = "Transportation Mode Choice Model"
+)
+```
+
+## Understanding the Output
+
+### Model Comparison Results
+
+When you run `compare_mnl_mnp()`, you get:
+
+- **RMSE**: Root Mean Squared Error (lower is better)
+- **Brier Score**: Probabilistic prediction accuracy (lower is better)
+- **AIC/BIC**: Information criteria (lower is better)
+- **Convergence**: Whether MNP successfully converged
+
+### Recommendations
+
+The package provides context-sensitive recommendations:
+
+- **n < 250**: Use MNL (MNP rarely converges)
+- **250 ≤ n < 500**: Use MNL (more reliable, often more accurate)
+- **n ≥ 500**: Either model viable; compare both
+
+## Key Findings from Research
+
+The package is based on systematic simulation studies showing:
+
+1. **MNP convergence is unreliable at small samples** (< 250 observations)
+2. **MNL often outperforms MNP even when MNP converges** (at n = 250)
+3. **Functional form specification matters MORE than MNL vs MNP choice**
+4. **For substitution effects, MNL is typically more accurate**
+
+## Common Pitfalls
+
+### 1. Ignoring MNP Convergence Issues
+
+```{r, eval=FALSE}
+# Bad: Assuming MNP converged
+mnp_fit <- MNP::mnp(choice ~ x1 + x2, data = mydata)
+
+# Good: Use safe wrapper
+mnp_fit <- fit_mnp_safe(
+  choice ~ x1 + x2,
+  data = mydata,
+  fallback = "MNL",  # Use MNL if MNP fails
+  verbose = TRUE     # Show convergence diagnostics
+)
+```
+
+### 2. Using Only Linear Specifications
+
+```{r, eval=FALSE}
+# Before using MNP, try flexible MNL
+flexible_result <- flexible_mnl(
+  choice ~ x1 + x2,
+  data = mydata,
+  forms = c("linear", "quadratic", "log")
+)
+
+# Quadratic MNL often beats linear MNP
+```
+
+### 3. Not Testing IIA Assumption
+
+```{r, eval=FALSE}
+# Test whether IIA assumption holds
+iia_test <- test_iia(
+  mode ~ income + distance,
+  data_obj = commuter_choice
+)
+
+print(iia_test$recommendation)
+```
+
+## Advanced Features
+
+### Comprehensive Convergence Diagnostics
+
+```{r, eval=FALSE}
+# Fit MNP model
+mnp_fit <- MNP::mnp(choice ~ x1 + x2, data = mydata,
+                    n.draws = 5000, burnin = 1000)
+
+# Detailed convergence report
+conv_report <- convergence_report(mnp_fit)
+
+if (!conv_report$converged) {
+  print(conv_report$recommendation)
+}
+```
+
+### Estimand-Based Evaluation
+
+```{r, eval=FALSE}
+# Evaluate models based on what you want to estimate
+mnl_fit <- nnet::multinom(choice ~ x, data = mydata)
+mnp_fit <- fit_mnp_safe(choice ~ x, data = mydata)
+
+eval_result <- evaluate_by_estimand(
+  list(mnl = mnl_fit, mnp = mnp_fit),
+  data = mydata,
+  estimand = "probabilities"  # or "parameters" or "substitution"
+)
+```
+
+### Sample Size Planning
+
+```{r, eval=FALSE}
+# Calculate required sample size
+n_calc <- sample_size_calculator(
+  desired_estimand = "probabilities",
+  target_accuracy = 0.05,  # Target RMSE
+  n_alternatives = 4
+)
+
+print(n_calc$recommended_n)
+print(n_calc$tradeoff_table)
+```
+
+## Getting Help
+
+- **Documentation**: `?function_name` for help on specific functions
+- **GitHub Issues**: Report bugs or request features
+- **Paper**: See our research paper for methodological details
+
+## Citation
+
+If you use this package in your research, please cite:
+
+```
+Your Name (2024). mnlChoice: Tools for Comparing Multinomial Logit
+and Multinomial Probit Models. R package version 0.1.0.
+```
+
+## Further Reading
+
+- **When to use MNL vs MNP**: See `?recommend_model`
+- **Dropout scenario analysis**: See `?simulate_dropout_scenario`
+- **Functional form selection**: See `?flexible_mnl`
+- **Full function reference**: Browse package documentation

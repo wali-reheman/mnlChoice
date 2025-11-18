@@ -48,9 +48,9 @@ source("R/run_benchmark_simulation.R")
 source("R/fit_mnp_safe.R")
 
 cat("\n")
-cat(strrep("=", 70), "\n")
+cat(paste(rep("=", 70), collapse = ""), "\n")
 cat("Starting benchmark simulation...\n")
-cat(strrep("=", 70), "\n\n")
+cat(paste(rep("=", 70), collapse = ""), "\n\n")
 
 # Run pilot benchmark
 pilot_results <- run_benchmark_simulation(
@@ -69,9 +69,9 @@ pilot_results <- run_benchmark_simulation(
 )
 
 cat("\n")
-cat(strrep("=", 70), "\n")
+cat(paste(rep("=", 70), collapse = ""), "\n")
 cat("  PILOT BENCHMARK COMPLETE!\n")
-cat(strrep("=", 70), "\n\n")
+cat(paste(rep("=", 70), collapse = ""), "\n\n")
 
 # Summary statistics
 cat("Summary of Results:\n\n")
@@ -99,7 +99,7 @@ if (nrow(both_converged) > 0) {
 }
 
 cat("\n")
-cat(strrep("=", 70), "\n\n")
+cat(paste(rep("=", 70), collapse = ""), "\n\n")
 
 cat("Next steps:\n")
 cat("  1. Review results in data/pilot_benchmark.rda\n")
