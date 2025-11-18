@@ -17,6 +17,18 @@ compare_mnl_mnp_cv <- function(formula, data, metrics = c("RMSE", "Brier", "Accu
                                cross_validate = TRUE, n_folds = 5,
                                verbose = TRUE, ...) {
 
+  # Check MNP availability upfront
+  mnp_available <- requireNamespace("MNP", quietly = TRUE)
+  if (!mnp_available) {
+    warning(
+      "\n*** MNP package not installed ***\n",
+      "Cannot compare MNL vs MNP without MNP package.\n",
+      "Install with: install.packages('MNP')\n",
+      "Proceeding with MNL-only analysis.\n",
+      call. = FALSE
+    )
+  }
+
   valid_metrics <- c("RMSE", "Brier", "AIC", "BIC", "LogLik", "Accuracy", "LogLoss")
   if (!all(metrics %in% valid_metrics)) {
     stop(sprintf("metrics must be subset of: %s", paste(valid_metrics, collapse = ", ")))
@@ -24,6 +36,9 @@ compare_mnl_mnp_cv <- function(formula, data, metrics = c("RMSE", "Brier", "Accu
 
   if (verbose) {
     cat("\n=== MNL vs MNP Comparison ===\n")
+    if (!mnp_available) {
+      cat("*** MNP not available - MNL-only results ***\n")
+    }
     if (cross_validate) {
       cat(sprintf("Using %d-fold cross-validation\n\n", n_folds))
     } else {

@@ -177,6 +177,9 @@ test_iia <- function(formula_obj, data_obj, method = "hausman",
     "Consider MNP or mixed logit (IIA violated, error correlation likely)"
   }
 
+  # Check MNP availability for recommendations
+  mnp_available <- requireNamespace("MNP", quietly = TRUE)
+
   # Print results
   if (verbose) {
     cat("\n")
@@ -197,7 +200,12 @@ test_iia <- function(formula_obj, data_obj, method = "hausman",
       cat("⚠️  IIA appears violated. This suggests:\n")
       cat("  • Error terms may be correlated across alternatives\n")
       cat("  • MNL may produce biased estimates\n")
-      cat("  • Consider MNP (if n >= 500) or mixed logit\n\n")
+      cat("  • Consider MNP (if n >= 500) or mixed logit\n")
+      if (!mnp_available) {
+        cat("\n  *** Note: MNP package not installed ***\n")
+        cat("  Install with: install.packages('MNP')\n")
+      }
+      cat("\n")
     } else {
       cat("✓ IIA holds. MNL is appropriate for this data.\n\n")
     }

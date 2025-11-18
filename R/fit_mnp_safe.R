@@ -62,16 +62,20 @@ fit_mnp_safe <- function(formula, data, fallback = "MNL", max_attempts = 3,
   mnp_available <- requireNamespace("MNP", quietly = TRUE)
 
   if (!mnp_available) {
-    if (verbose) {
-      message("MNP package not available. ")
-    }
+    warning(
+      "\n*** MNP package not installed ***\n",
+      "MNP is required for multinomial probit models.\n",
+      "Install with: install.packages('MNP')\n",
+      call. = FALSE, immediate. = TRUE
+    )
 
     if (fallback == "MNL") {
-      if (verbose) message("Fitting MNL instead...")
+      if (verbose) message("Falling back to MNL (multinomial logit)...")
       return(.fit_mnl_fallback(formula, data, verbose, ...))
     } else if (fallback == "error") {
       stop("MNP package not installed. Install with: install.packages('MNP')")
     } else {
+      if (verbose) message("Returning NULL (MNP not available, fallback='NULL')")
       return(NULL)
     }
   }

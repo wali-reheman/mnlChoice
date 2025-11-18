@@ -59,6 +59,17 @@ publication_table <- function(mnl_fit, mnp_fit = NULL, format = "latex",
                               caption = NULL, title = NULL, label = NULL,
                               verbose = TRUE) {
 
+  # Check MNP availability if comparison requested
+  if (is.null(mnp_fit)) {
+    mnp_available <- requireNamespace("MNP", quietly = TRUE)
+    if (!mnp_available && verbose) {
+      message(
+        "\nNote: MNP package not installed. Table will show MNL results only.\n",
+        "To compare with MNP, install with: install.packages('MNP')\n"
+      )
+    }
+  }
+
   # Handle title/caption (title is alias for caption)
   if (!is.null(title) && is.null(caption)) {
     caption <- title

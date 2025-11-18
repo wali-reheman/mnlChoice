@@ -6,9 +6,9 @@
 # Estimated time: 1-2 hours (without parallel) or 30-60 min (with parallel)
 
 cat("\n")
-cat(strrep("=", 70), "\n")
+cat(paste(rep("=", 70), collapse = ""), "\n")
 cat("  PILOT BENCHMARK STUDY: MNL vs MNP\n")
-cat(strrep("=", 70), "\n\n")
+cat(paste(rep("=", 70), collapse = ""), "\n\n")
 
 cat("This will run 1,800 REAL Monte Carlo simulations to replace\n")
 cat("the illustrative placeholder data currently in the package.\n\n")
@@ -22,13 +22,14 @@ cat("  Total: 1,800 simulations\n\n")
 
 # Check if parallel package available
 has_parallel <- requireNamespace("parallel", quietly = TRUE)
-use_parallel <- has_parallel && interactive()
+# Auto-proceed in non-interactive mode
+use_parallel <- has_parallel
 
 if (use_parallel) {
   n_cores <- min(4, parallel::detectCores() - 1)
   cat(sprintf("Using parallel processing with %d cores\n", n_cores))
 } else {
-  cat("Running sequentially (use parallel=TRUE for faster execution)\n")
+  cat("Running sequentially\n")
 }
 
 cat("\nEstimated time: ")
@@ -39,12 +40,7 @@ if (use_parallel) {
 }
 
 cat("\n")
-response <- readline(prompt = "Continue? (y/n): ")
-
-if (tolower(response) != "y") {
-  cat("Benchmark cancelled.\n")
-  quit(save = "no")
-}
+cat("Starting automatically...\n\n")
 
 # Source the simulation function
 source("R/generate_data.R")

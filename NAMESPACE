@@ -37,5 +37,20 @@ export(plot_recommendation_regions)
 export(power_analysis_mnl)
 export(sample_size_table)
 
+# Paper-inspired functions (Phase 1: Align with Paper)
+export(simulate_dropout_scenario)
+export(evaluate_by_estimand)
+export(flexible_mnl)
+
+# Paper-inspired functions (Phase 2: High Value)
+export(decision_framework)
+export(substitution_matrix)
+export(convergence_report)
+
+# Paper-inspired functions (Phase 3: Enhancements)
+export(functional_form_test)
+export(brier_score)
+export(sample_size_calculator)
+
 # Methods
 S3method(predict, mnp_safe)

@@ -46,6 +46,18 @@
 #' @export
 recommend_model <- function(n, correlation = NULL, functional_form = "linear", verbose = TRUE) {
 
+  # Check MNP availability
+  mnp_available <- requireNamespace("MNP", quietly = TRUE)
+  if (!mnp_available && verbose) {
+    warning(
+      "\n*** MNP package not installed ***\n",
+      "Recommendations for MNP assume the package is available.\n",
+      "Install with: install.packages('MNP')\n",
+      "Without MNP, use MNL for all analyses.\n",
+      call. = FALSE
+    )
+  }
+
   # Input validation
   if (!is.numeric(n) || n <= 0) {
     stop("n must be a positive integer")

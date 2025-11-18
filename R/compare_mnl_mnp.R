@@ -61,6 +61,18 @@ compare_mnl_mnp <- function(formula, data, metrics = c("RMSE", "Brier", "AIC"),
                             cross_validate = FALSE, n_folds = 5,
                             verbose = TRUE, ...) {
 
+  # Check MNP availability upfront
+  mnp_available <- requireNamespace("MNP", quietly = TRUE)
+  if (!mnp_available) {
+    warning(
+      "\n*** MNP package not installed ***\n",
+      "Cannot compare MNL vs MNP without MNP package.\n",
+      "Install with: install.packages('MNP')\n",
+      "Proceeding with MNL-only analysis.\n",
+      call. = FALSE
+    )
+  }
+
   # Input validation
   valid_metrics <- c("RMSE", "Brier", "AIC", "BIC", "LogLik")
   if (!all(metrics %in% valid_metrics)) {
@@ -68,7 +80,11 @@ compare_mnl_mnp <- function(formula, data, metrics = c("RMSE", "Brier", "AIC"),
   }
 
   if (verbose) {
-    cat("\n=== MNL vs MNP Comparison ===\n\n")
+    cat("\n=== MNL vs MNP Comparison ===\n")
+    if (!mnp_available) {
+      cat("*** MNP not available - MNL-only results ***\n")
+    }
+    cat("\n")
   }
 
   # Fit MNL (always works)
