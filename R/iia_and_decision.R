@@ -54,10 +54,10 @@ test_iia <- function(formula, data, method = "hausman",
     stop("nnet package required for IIA test. Install with: install.packages('nnet')")
   }
 
-  # Force evaluation of data parameter to avoid scoping issues with base::data()
+  # Ensure data is a data frame (keeps name 'data' for environment consistency)
   data <- as.data.frame(data)
 
-  # Extract response
+  # Extract response variable
   response_var <- all.vars(formula)[1]
   y <- data[[response_var]]
   if (!is.factor(y)) y <- factor(y)
@@ -70,8 +70,8 @@ test_iia <- function(formula, data, method = "hausman",
     stop("IIA test requires at least 3 alternatives")
   }
 
-  # Fit full model
-  full_model <- nnet::multinom(formula, data = data, trace = FALSE)
+  # Fit full model - use explicit argument names to avoid conflicts
+  full_model <- nnet::multinom(formula = formula, data = data, trace = FALSE)
   full_coef <- coef(full_model)
   full_vcov <- vcov(full_model)
 
@@ -95,9 +95,9 @@ test_iia <- function(formula, data, method = "hausman",
     warning("Restricted dataset very small (n < 50). Test may be unreliable.")
   }
 
-  # Fit restricted model
+  # Fit restricted model - use explicit arguments
   restricted_model <- tryCatch({
-    nnet::multinom(formula, data = restricted_data, trace = FALSE)
+    nnet::multinom(formula = formula, data = restricted_data, trace = FALSE)
   }, error = function(e) {
     stop(sprintf("Failed to fit restricted model: %s", e$message))
   })
