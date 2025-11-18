@@ -64,7 +64,7 @@ test("test_iia() basic functionality", {
 
   result <- test_iia(
     mode ~ income + age + distance + owns_car,
-    data = commuter_choice,
+    data_obj = commuter_choice,
     omit_alternative = NULL,  # Will auto-select smallest
     verbose = FALSE
   )
@@ -86,7 +86,7 @@ test("test_iia() with specified alternative", {
 
   result <- test_iia(
     mode ~ income + age + distance,
-    data = commuter_choice,
+    data_obj = commuter_choice,
     omit_alternative = "Active",  # Smallest group
     verbose = FALSE
   )
@@ -103,7 +103,7 @@ test("test_iia() verbose output", {
   cat("\n")
   result <- test_iia(
     mode ~ income + distance + owns_car,
-    data = commuter_choice,
+    data_obj = commuter_choice,
     verbose = TRUE
   )
 
@@ -316,7 +316,7 @@ test("Full workflow: data → IIA test → decision → table", {
   cat("\n    Step 2: IIA test\n")
   iia_result <- test_iia(
     mode ~ income + age + distance + owns_car,
-    data = commuter_choice,
+    data_obj = commuter_choice,
     verbose = FALSE
   )
   cat(sprintf("      → IIA: %s (p=%.4f)\n", iia_result$decision, iia_result$p_value))

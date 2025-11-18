@@ -3,8 +3,8 @@
 #' Implements the Hausman-McFadden test for IIA assumption in multinomial models.
 #' If IIA holds, MNL is appropriate. If IIA is violated, consider MNP or mixed logit.
 #'
-#' @param formula Model formula.
-#' @param data Data frame containing the variables in the formula.
+#' @param formula_obj Model formula (e.g., choice ~ x1 + x2).
+#' @param data_obj Data frame containing the variables in the formula.
 #' @param method Character. Test method: "hausman" (default) or "small-hsiao".
 #' @param omit_alternative Which alternative to omit for test. If NULL, auto-selects largest group.
 #' @param alpha Significance level. Default 0.05.
@@ -37,7 +37,7 @@
 #' dat <- generate_choice_data(n = 300, correlation = 0.4, seed = 123)
 #'
 #' # Test IIA
-#' iia_test <- test_iia(choice ~ x1 + x2, data = dat$data)
+#' iia_test <- test_iia(choice ~ x1 + x2, data_obj = dat$data)
 #'
 #' # Interpretation
 #' print(iia_test$decision)
@@ -45,7 +45,7 @@
 #' }
 #'
 #' @export
-test_iia <- function(formula, data, method = "hausman",
+test_iia <- function(formula_obj, data_obj, method = "hausman",
                      omit_alternative = NULL, alpha = 0.05,
                      verbose = TRUE) {
 
@@ -54,14 +54,14 @@ test_iia <- function(formula, data, method = "hausman",
     stop("nnet package required for IIA test. Install with: install.packages('nnet')")
   }
 
-  # Ensure data is a data frame (keeps name 'data' for environment consistency)
-  data <- as.data.frame(data)
+  # Ensure data is a data frame
+  data_obj <- as.data.frame(data_obj)
 
   # Extract response variable
-  response_var <- all.vars(formula)[1]
-  y <- data[[response_var]]
+  response_var <- all.vars(formula_obj)[1]
+  y <- data_obj[[response_var]]
   if (!is.factor(y)) y <- factor(y)
-  data[[response_var]] <- y
+  data_obj[[response_var]] <- y
 
   alternatives <- levels(y)
   n_alt <- length(alternatives)
@@ -70,8 +70,8 @@ test_iia <- function(formula, data, method = "hausman",
     stop("IIA test requires at least 3 alternatives")
   }
 
-  # Fit full model - use explicit argument names to avoid conflicts
-  full_model <- nnet::multinom(formula = formula, data = data, trace = FALSE)
+  # Fit full model using do.call to avoid scoping issues
+  full_model <- do.call(nnet::multinom, list(formula_obj, data_obj, trace = FALSE))
   full_coef <- coef(full_model)
   full_vcov <- vcov(full_model)
 
@@ -87,7 +87,7 @@ test_iia <- function(formula, data, method = "hausman",
   }
 
   # Create restricted dataset (omit one alternative)
-  restricted_data <- data[y != omit_alternative, ]
+  restricted_data <- data_obj[y != omit_alternative, ]
   restricted_data[[response_var]] <- droplevels(restricted_data[[response_var]])
 
   # Check if restricted data has enough observations
@@ -95,9 +95,9 @@ test_iia <- function(formula, data, method = "hausman",
     warning("Restricted dataset very small (n < 50). Test may be unreliable.")
   }
 
-  # Fit restricted model - use explicit arguments
+  # Fit restricted model using do.call to avoid scoping issues
   restricted_model <- tryCatch({
-    nnet::multinom(formula = formula, data = restricted_data, trace = FALSE)
+    do.call(nnet::multinom, list(formula_obj, restricted_data, trace = FALSE))
   }, error = function(e) {
     stop(sprintf("Failed to fit restricted model: %s", e$message))
   })
