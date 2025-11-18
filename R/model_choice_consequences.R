@@ -5,6 +5,8 @@
 #'
 #' @param n Sample size for simulation.
 #' @param n_alternatives Number of choice alternatives. Default 3.
+#' @param n_vars Number of predictor variables. Default 2.
+#' @param formula Optional formula. If NULL, uses dynamic formula based on n_vars.
 #' @param true_correlation True error correlation (0 = IIA holds, >0 = IIA violated).
 #' @param n_sims Number of simulation replications. Default 100.
 #' @param seed Random seed for reproducibility.
@@ -44,6 +46,8 @@
 #'
 #' @export
 quantify_model_choice_consequences <- function(n, n_alternatives = 3,
+                                                n_vars = 2,
+                                                formula = NULL,
                                                 true_correlation = 0,
                                                 n_sims = 100, seed = NULL,
                                                 verbose = TRUE) {
@@ -59,8 +63,9 @@ quantify_model_choice_consequences <- function(n, n_alternatives = 3,
 
   if (verbose) {
     cat(sprintf("\nQuantifying model choice consequences...\n"))
-    cat(sprintf("  n = %d, correlation = %.2f, %d simulations\n\n",
+    cat(sprintf("  n = %d, correlation = %.2f, %d simulations\n",
                 n, true_correlation, n_sims))
+    cat(sprintf("  predictors = %d, alternatives = %d\n\n", n_vars, n_alternatives))
   }
 
   for (i in 1:n_sims) {
@@ -71,6 +76,7 @@ quantify_model_choice_consequences <- function(n, n_alternatives = 3,
     # Generate data with known true probabilities
     sim_data <- tryCatch({
       generate_choice_data(n = n, n_alternatives = n_alternatives,
+                          n_vars = n_vars,
                           correlation = true_correlation,
                           functional_form = "linear",
                           effect_size = 0.5, seed = i)
@@ -78,12 +84,15 @@ quantify_model_choice_consequences <- function(n, n_alternatives = 3,
 
     if (is.null(sim_data)) next
 
+    # Use provided formula or extract from sim_data
+    use_formula <- if (!is.null(formula)) formula else sim_data$formula
+
     # Fit MNL
     mnl_fit <- tryCatch({
       if (!requireNamespace("nnet", quietly = TRUE)) {
         NULL
       } else {
-        nnet::multinom(choice ~ x1 + x2, data = sim_data$data, trace = FALSE)
+        nnet::multinom(use_formula, data = sim_data$data, trace = FALSE)
       }
     }, error = function(e) NULL)
 
@@ -92,7 +101,7 @@ quantify_model_choice_consequences <- function(n, n_alternatives = 3,
       if (!requireNamespace("MNP", quietly = TRUE)) {
         NULL
       } else {
-        MNP::mnp(choice ~ x1 + x2, data = sim_data$data,
+        MNP::mnp(use_formula, data = sim_data$data,
                 verbose = FALSE, n.draws = 2000, burnin = 500)
       }
     }, error = function(e) NULL)

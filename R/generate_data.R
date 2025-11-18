@@ -17,6 +17,9 @@
 #'   \item{true_probs}{Matrix of true choice probabilities}
 #'   \item{true_betas}{Matrix of true coefficient values}
 #'   \item{correlation_matrix}{Correlation matrix used for errors}
+#'   \item{formula}{Formula object dynamically created based on n_vars (e.g., choice ~ x1 + x2 + x3)}
+#'   \item{n_vars}{Number of predictor variables}
+#'   \item{n_alternatives}{Number of choice alternatives}
 #'
 #' @details
 #' This function generates multinomial choice data using either a logit or probit
@@ -132,6 +135,11 @@ generate_choice_data <- function(n, n_alternatives = 3, n_vars = 2,
     stringsAsFactors = FALSE
   )
 
+  # Create formula dynamically based on n_vars
+  predictor_names <- paste0("x", 1:n_vars)
+  formula_str <- paste("choice ~", paste(predictor_names, collapse = " + "))
+  formula_obj <- as.formula(formula_str)
+
   # Return results
   list(
     data = data_df,
@@ -140,7 +148,9 @@ generate_choice_data <- function(n, n_alternatives = 3, n_vars = 2,
     correlation_matrix = cor_matrix,
     functional_form = functional_form,
     n = n,
-    n_alternatives = n_alternatives
+    n_alternatives = n_alternatives,
+    n_vars = n_vars,
+    formula = formula_obj  # Dynamic formula based on actual n_vars
   )
 }
 

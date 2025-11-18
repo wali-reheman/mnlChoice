@@ -8,6 +8,7 @@
 #' @param effect_sizes Vector of effect sizes. Default: c(0.3, 0.5, 0.8).
 #' @param n_reps Number of replications per condition. Default: 500.
 #' @param n_alternatives Number of choice alternatives. Default: 3.
+#' @param n_vars Number of predictor variables. Default: 2.
 #' @param functional_forms Vector of functional forms. Default: c("linear", "quadratic").
 #' @param parallel Logical. Use parallel processing. Default: FALSE.
 #' @param n_cores Number of cores for parallel processing. Default: 4.
@@ -71,6 +72,7 @@ run_benchmark_simulation <- function(sample_sizes = c(50, 100, 250, 500, 1000, 2
                                       effect_sizes = c(0.3, 0.5, 0.8),
                                       n_reps = 500,
                                       n_alternatives = 3,
+                                      n_vars = 2,
                                       functional_forms = c("linear", "quadratic"),
                                       parallel = FALSE,
                                       n_cores = 4,
@@ -125,6 +127,7 @@ run_benchmark_simulation <- function(sample_sizes = c(50, 100, 250, 500, 1000, 2
       generate_choice_data(
         n = cond$n,
         n_alternatives = n_alternatives,
+        n_vars = n_vars,
         correlation = cond$correlation,
         functional_form = cond$functional_form,
         effect_size = cond$effect_size,
@@ -150,11 +153,14 @@ run_benchmark_simulation <- function(sample_sizes = c(50, 100, 250, 500, 1000, 2
       ))
     }
 
+    # Use dynamic formula from generated data
+    use_formula <- sim_data$formula
+
     # Fit MNL
     t_mnl_start <- Sys.time()
     mnl_fit <- tryCatch({
       if (requireNamespace("nnet", quietly = TRUE)) {
-        nnet::multinom(choice ~ x1 + x2, data = sim_data$data, trace = FALSE)
+        nnet::multinom(use_formula, data = sim_data$data, trace = FALSE)
       } else {
         NULL
       }
@@ -165,7 +171,7 @@ run_benchmark_simulation <- function(sample_sizes = c(50, 100, 250, 500, 1000, 2
     t_mnp_start <- Sys.time()
     mnp_fit <- tryCatch({
       if (requireNamespace("MNP", quietly = TRUE)) {
-        MNP::mnp(choice ~ x1 + x2, data = sim_data$data,
+        MNP::mnp(use_formula, data = sim_data$data,
                 verbose = FALSE, n.draws = 2000, burnin = 500)
       } else {
         NULL
