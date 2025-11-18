@@ -17,10 +17,17 @@ Depends:
     R (>= 4.0.0)
 Imports:
     stats,
-    utils
+    utils,
+    graphics,
+    grDevices
 Suggests:
     MNP,
     mlogit,
     nnet,
-    testthat (>= 3.0.0)
+    mvtnorm,
+    coda,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
 RoxygenNote: 7.0.0

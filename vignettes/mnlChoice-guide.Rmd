@@ -1,0 +1,490 @@
+---
+title: "Complete Guide to mnlChoice: Choosing Between MNL and MNP Models"
+author: "mnlChoice Package Authors"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Complete Guide to mnlChoice}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Introduction
+
+The `mnlChoice` package helps researchers make evidence-based decisions about when to use Multinomial Logit (MNL) versus Multinomial Probit (MNP) models. Based on extensive Monte Carlo simulations, it provides:
+
+- **Decision support**: Should I use MNL or MNP for my data?
+- **Performance comparison**: Which model performs better on my specific dataset?
+- **Diagnostic tools**: Did my MNP model actually converge?
+- **Power analysis**: How many observations do I need?
+- **Visualization**: See convergence rates and performance trends
+
+## Quick Start
+
+### 1. Get a Recommendation
+
+The simplest use case: you have a dataset and want to know which model to use.
+
+```{r eval=FALSE}
+library(mnlChoice)
+
+# I have 250 observations
+recommend_model(n = 250)
+
+# I have 250 observations and expect moderate error correlation
+recommend_model(n = 250, correlation = 0.5)
+
+# Large sample with quadratic relationships
+recommend_model(n = 1000, functional_form = "quadratic")
+```
+
+### 2. Compare Models on Your Data
+
+Want to see which model actually performs better on your specific dataset?
+
+```{r eval=FALSE}
+# Load your data
+data(my_choice_data)  # Replace with your data
+
+# Compare both models with cross-validation
+comparison <- compare_mnl_mnp_cv(
+  choice ~ price + quality + brand,
+  data = my_choice_data,
+  cross_validate = TRUE,
+  n_folds = 5
+)
+
+# View results
+print(comparison$results)
+print(comparison$recommendation)
+```
+
+### 3. Safe MNP Fitting
+
+MNP often fails to converge. Use `fit_mnp_safe()` to handle this gracefully:
+
+```{r eval=FALSE}
+# Try MNP, fall back to MNL if it fails
+fit <- fit_mnp_safe(
+  choice ~ price + quality,
+  data = my_data,
+  fallback = "MNL"
+)
+
+# Check which model actually got fitted
+attr(fit, "model_type")  # "MNP" or "MNL"
+```
+
+## Core Functionality
+
+### Decision Support
+
+The `recommend_model()` function provides evidence-based recommendations:
+
+```{r eval=FALSE}
+# Small sample - MNL recommended
+result <- recommend_model(n = 100)
+# Recommendation: MNL
+# Reason: At n=100, MNP converges only 2% of the time
+
+# Medium sample - still MNL
+result <- recommend_model(n = 250)
+# Recommendation: MNL
+# Reason: MNL wins 58% even when MNP converges
+
+# Large sample - either model OK
+result <- recommend_model(n = 1000)
+# Recommendation: Either
+# Reason: Both models perform similarly at large n
+```
+
+### Model Comparison
+
+Compare MNL and MNP head-to-head:
+
+```{r eval=FALSE}
+# Generate example data
+set.seed(123)
+dat <- generate_choice_data(n = 250, correlation = 0.3, seed = 123)
+
+# Compare models (with cross-validation)
+comp <- compare_mnl_mnp_cv(
+  choice ~ x1 + x2,
+  data = dat$data,
+  cross_validate = TRUE,
+  metrics = c("RMSE", "Brier", "Accuracy", "AIC")
+)
+
+# Results show performance on each metric
+comp$results
+#   Metric      MNL      MNP Winner
+#   RMSE (CV)  0.042    0.089    MNL
+#   Brier (CV) 0.0024   0.0043   MNL
+#   Accuracy   0.67     0.63     MNL
+#   AIC        445.3    451.2    MNL
+```
+
+### Data Generation
+
+Generate synthetic data for testing and simulation:
+
+```{r eval=FALSE}
+# Generate 3-alternative choice data
+dat <- generate_choice_data(
+  n = 500,
+  n_alternatives = 3,
+  correlation = 0.5,
+  functional_form = "linear",
+  effect_size = 1,
+  seed = 123
+)
+
+# Access components
+head(dat$data)           # The dataset
+head(dat$true_probs)     # True choice probabilities
+dat$true_betas           # True coefficients
+
+# Generate data with quadratic functional form
+dat_quad <- generate_choice_data(
+  n = 500,
+  functional_form = "quadratic"
+)
+```
+
+### Performance Evaluation
+
+Evaluate prediction performance:
+
+```{r eval=FALSE}
+# Fit a model
+fit <- nnet::multinom(choice ~ x1 + x2, data = dat$data, trace = FALSE)
+
+# Get predictions
+pred_probs <- predict(fit, type = "probs")
+
+# Evaluate against true probabilities
+perf <- evaluate_performance(
+  predicted_probs = pred_probs,
+  true_probs = dat$true_probs,
+  actual_choices = dat$data$choice,
+  metrics = c("RMSE", "Brier", "LogLoss", "Accuracy")
+)
+
+print(perf)
+```
+
+## Diagnostic Tools
+
+### MCMC Convergence Checking
+
+MNP uses MCMC estimation. Check if it actually converged:
+
+```{r eval=FALSE}
+# Fit MNP
+mnp_fit <- fit_mnp_safe(choice ~ x1 + x2, data = dat$data, fallback = "NULL")
+
+if (!is.null(mnp_fit)) {
+  # Check convergence with diagnostic plots
+  diag <- check_mnp_convergence(
+    mnp_fit,
+    diagnostic_plots = TRUE,
+    geweke_threshold = 2,
+    ess_threshold = 0.10
+  )
+
+  # See results
+  print(diag$converged)              # Overall assessment
+  print(diag$geweke_test)            # Geweke z-statistics
+  print(diag$effective_sample_size)  # ESS for each parameter
+}
+```
+
+### Model Summary Comparison
+
+Side-by-side comparison of model diagnostics:
+
+```{r eval=FALSE}
+mnl_fit <- nnet::multinom(choice ~ x1 + x2, data = dat$data, trace = FALSE)
+mnp_fit <- fit_mnp_safe(choice ~ x1 + x2, data = dat$data, fallback = "NULL")
+
+model_summary_comparison(mnl_fit, mnp_fit)
+# Displays: convergence status, parameters, log-likelihood, AIC, BIC
+```
+
+## Visualization
+
+### Convergence Rates
+
+Visualize how MNP convergence varies with sample size:
+
+```{r eval=FALSE}
+plot_convergence_rates()
+# Shows: 2% at n=100, 74% at n=250, 90% at n=500
+```
+
+### Win Rates
+
+See when MNL beats MNP:
+
+```{r eval=FALSE}
+plot_win_rates()
+# Shows: MNL wins 58% at n=250, 52% at n=500
+```
+
+### Recommendation Regions
+
+2D visualization of recommendations by sample size and correlation:
+
+```{r eval=FALSE}
+plot_recommendation_regions()
+# Heatmap showing which model to use for different conditions
+```
+
+### Comparison Results
+
+Visualize head-to-head comparison:
+
+```{r eval=FALSE}
+comparison <- compare_mnl_mnp_cv(choice ~ x1 + x2, data = dat$data)
+plot_comparison(comparison)
+# Bar plot showing MNL vs MNP on each metric
+```
+
+## Power Analysis
+
+### Determine Required Sample Size
+
+How many observations do you need to detect an effect?
+
+```{r eval=FALSE}
+# Power analysis for moderate effect (0.5)
+power_result <- power_analysis_mnl(
+  effect_size = 0.5,
+  power = 0.80,
+  alpha = 0.05,
+  model = "MNL",
+  n_sims = 100
+)
+
+# Required sample size
+print(power_result$required_n)
+
+# Power curve data
+head(power_result$power_curve)
+```
+
+### Sample Size Lookup Table
+
+Quick reference for different scenarios:
+
+```{r eval=FALSE}
+# Get sample size requirements
+sample_size_table(model = "MNL", n_alternatives = 3)
+
+# Output shows required n for different effect sizes and power levels
+#   Effect Size  Power=70%  Power=80%  Power=90%
+#          0.20       630        840       1130
+#          0.35       210        280        380
+#          0.50       110        140        190
+#          0.65        70         90        120
+#          0.80        50         60         80
+```
+
+## Advanced Usage
+
+### Custom Cross-Validation
+
+```{r eval=FALSE}
+# 10-fold cross-validation with all metrics
+comp <- compare_mnl_mnp_cv(
+  choice ~ x1 + x2 + x3,
+  data = my_data,
+  metrics = c("RMSE", "Brier", "Accuracy", "LogLoss", "AIC", "BIC"),
+  cross_validate = TRUE,
+  n_folds = 10,
+  verbose = TRUE
+)
+
+# Extract fold-level results
+comp$cv_performed   # TRUE
+comp$n_folds        # 10
+```
+
+### Prediction with Safe Models
+
+```{r eval=FALSE}
+# Fit model with fallback
+train_data <- dat$data[1:200, ]
+test_data <- dat$data[201:250, ]
+
+fit <- fit_mnp_safe(choice ~ x1 + x2, data = train_data, fallback = "MNL")
+
+# Make predictions
+pred_probs <- predict(fit, newdata = test_data, type = "probs")
+pred_class <- predict(fit, newdata = test_data, type = "class")
+
+# Works regardless of whether MNP or MNL was actually fitted
+```
+
+### Simulation Studies
+
+Use the package for your own simulations:
+
+```{r eval=FALSE}
+# Run simulation comparing MNL and MNP
+n_sims <- 100
+results <- data.frame()
+
+for (i in 1:n_sims) {
+  # Generate data
+  dat <- generate_choice_data(n = 250, seed = i)
+
+  # Compare models
+  comp <- compare_mnl_mnp_cv(
+    choice ~ x1 + x2,
+    data = dat$data,
+    verbose = FALSE
+  )
+
+  # Store results
+  results <- rbind(results, comp$results)
+}
+
+# Analyze simulation results
+aggregate(MNL ~ Metric, data = results, mean)
+aggregate(MNP ~ Metric, data = results, mean)
+```
+
+## Real-World Examples
+
+### Example 1: Transportation Mode Choice
+
+```{r eval=FALSE}
+# You have 300 observations of commuters choosing between:
+# car, bus, train based on travel time and cost
+
+# Step 1: Get recommendation
+recommend_model(n = 300, correlation = 0.4)
+# Recommendation: MNL (high confidence)
+
+# Step 2: Fit MNL
+fit_mnl <- nnet::multinom(
+  mode ~ travel_time + cost,
+  data = commute_data,
+  trace = FALSE
+)
+
+# Step 3: Check if MNP would have been better
+comparison <- compare_mnl_mnp_cv(
+  mode ~ travel_time + cost,
+  data = commute_data,
+  cross_validate = TRUE
+)
+# Result: MNL wins on RMSE, Brier, and AIC
+```
+
+### Example 2: Product Choice
+
+```{r eval=FALSE}
+# You have 1000 observations of consumers choosing between products
+
+# Step 1: Check recommendation
+recommend_model(n = 1000, correlation = 0.6, functional_form = "quadratic")
+# Recommendation: Either model OK (consider quadratic MNL)
+
+# Step 2: Try both, including quadratic terms
+fit_mnl_linear <- nnet::multinom(product ~ price + quality, data = purchase_data)
+fit_mnl_quad <- nnet::multinom(product ~ price + quality + I(price^2) + I(quality^2),
+                               data = purchase_data)
+fit_mnp <- fit_mnp_safe(product ~ price + quality, data = purchase_data,
+                        fallback = "NULL")
+
+# Step 3: Compare
+# ... comparison code ...
+```
+
+## Best Practices
+
+### When to Use MNL
+
+- **n < 250**: Always use MNL (MNP won't converge reliably)
+- **n = 250-500**: Prefer MNL (simpler, faster, often more accurate)
+- **No strong theoretical reason for error correlation**: Use MNL
+- **Need fast estimation**: Use MNL
+- **Presenting to non-technical audience**: Use MNL (easier to explain)
+
+### When to Consider MNP
+
+- **n > 500**: MNP converges reliably
+- **Strong theoretical reason to expect error correlation**: Try MNP
+- **Large correlations (r > 0.5) observed in data**: MNP may perform better
+- **Only if computational time not an issue**: MNP is slower
+
+### Always
+
+1. **Check convergence**: Use `check_mnp_convergence()` for MNP models
+2. **Compare empirically**: Use `compare_mnl_mnp_cv()` on your data
+3. **Test functional form**: Try quadratic/log specifications
+4. **Use cross-validation**: Don't rely on in-sample fit
+5. **Report both**: Show readers you tried both models
+
+## Common Pitfalls
+
+### Don't
+
+- ❌ Blindly trust MNP results without checking convergence
+- ❌ Use MNP with n < 250
+- ❌ Ignore convergence warnings
+- ❌ Compare in-sample AIC when models differ in complexity
+- ❌ Assume error correlation without testing
+
+### Do
+
+- ✅ Start with `recommend_model()` to get guidance
+- ✅ Use `fit_mnp_safe()` with fallback for robustness
+- ✅ Check diagnostics with `check_mnp_convergence()`
+- ✅ Compare models on YOUR data with cross-validation
+- ✅ Consider functional form as important as model choice
+
+## Getting Help
+
+```{r eval=FALSE}
+# View package documentation
+help(package = "mnlChoice")
+
+# Function help
+?recommend_model
+?compare_mnl_mnp_cv
+?generate_choice_data
+
+# See all exported functions
+ls("package:mnlChoice")
+```
+
+## Citation
+
+If you use this package in your research:
+
+```
+citation("mnlChoice")
+```
+
+## Summary
+
+The `mnlChoice` package makes choosing between MNL and MNP models:
+
+- **Evidence-based**: Built on 3,000+ Monte Carlo simulations
+- **Practical**: Handles real convergence issues
+- **Comprehensive**: Decision support, comparison, diagnostics, visualization
+- **Honest**: MNL is often the right choice
+
+**Key takeaway**: Model choice matters less than you think. Good data, appropriate functional form, and careful interpretation matter more. But when in doubt, at small to medium sample sizes, **use MNL**.
