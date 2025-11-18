@@ -129,10 +129,11 @@ check_mnp_convergence <- function(mnp_fit, diagnostic_plots = TRUE,
     })
 
     # Create diagnostic plots if requested
-    if (diagnostic_plots && n_params > 0) {
+    if (diagnostic_plots && n_params > 0 && interactive()) {
       # Set up plot layout
       n_plot_params <- min(6, n_params)  # Plot up to 6 parameters
-      par(mfrow = c(min(3, n_plot_params), 2))
+      old_par <- par(mfrow = c(min(3, n_plot_params), 2))
+      on.exit(par(old_par), add = TRUE)
 
       for (j in 1:n_plot_params) {
         # Trace plot
@@ -143,8 +144,6 @@ check_mnp_convergence <- function(mnp_fit, diagnostic_plots = TRUE,
         # Autocorrelation plot
         acf(mcmc_draws[, j], main = sprintf("ACF: %s", colnames(mcmc_draws)[j]))
       }
-
-      par(mfrow = c(1, 1))  # Reset
     }
 
   } else {

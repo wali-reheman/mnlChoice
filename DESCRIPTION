@@ -3,7 +3,8 @@ Type: Package
 Title: Evidence-Based Model Selection for Multinomial Choice Models
 Version: 0.1.0
 Authors@R: c(
-    person("Your", "Name", email = "your.email@example.com", role = c("aut", "cre"))
+    person("Wali", "Reheman", email = "wr6045a@american.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-HERE", affiliation = "Department of Government, American University"))
     )
 Description: Provides evidence-based guidance for choosing between Multinomial
     Logit (MNL) and Multinomial Probit (MNP) models based on systematic Monte Carlo

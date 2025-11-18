@@ -420,7 +420,7 @@ citation("mnlChoice")
 ```
 @software{mnlChoice,
   title = {mnlChoice: Evidence-Based Model Selection for Multinomial Choice Models},
-  author = {{Your Names}},
+  author = {Wali Reheman},
   year = {2024},
   note = {R package version 0.2.0},
   url = {https://github.com/wali-reheman/MNLNP}
@@ -430,8 +430,9 @@ citation("mnlChoice")
 And cite the accompanying paper:
 
 ```
-{Your Names} (2024). When Multinomial Logit Outperforms Multinomial Probit:
-A Monte Carlo Comparison. [Journal/Working Paper].
+Reheman, Wali (2024). When Multinomial Logit Outperforms Multinomial Probit:
+A Monte Carlo Comparison. Department of Government, American University.
+[Working Paper].
 ```
 
 ---

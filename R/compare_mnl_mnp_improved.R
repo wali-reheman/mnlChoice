@@ -35,6 +35,15 @@ compare_mnl_mnp_cv <- function(formula, data, metrics = c("RMSE", "Brier", "Accu
   response_var <- all.vars(formula)[1]
   y_true <- data[[response_var]]
 
+  # Ensure y_true is a factor for proper handling
+  if (!is.factor(y_true)) {
+    y_true <- factor(y_true)
+    data[[response_var]] <- y_true
+    if (verbose) {
+      message("Note: Response variable converted to factor")
+    }
+  }
+
   results <- data.frame(
     Metric = character(),
     MNL = numeric(),
